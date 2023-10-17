@@ -21,29 +21,49 @@ struct Board board_g ;
 void * draw_thread(void * the_args) {
 	struct T_arg * t_arg = (struct T_arg *) the_args ;
 	struct timeval tv;
-    struct timespec ts;
+    	struct timespec ts;
     
     char * board_string ;
     
 	board_string = (char *) malloc(BOARD_SIZE+1) ;
 	assert(board_string) ;
 
-	while (1) {
-	
-// ***
-// stuff to do 
-// ***	
+	// inside the draw_thread function
 
-		pthread_mutex_lock(t_arg->mutex) ;
-		{
-			
-// ***
-// stuff to do 
-// ***	
-			
-		}	
-		pthread_mutex_unlock(t_arg->mutex) ;
+	while (1) {
+	    pthread_mutex_lock(t_arg->mutex) ;
+	    {
+	        if (t_arg->req_exit) {
+	            pthread_mutex_unlock(t_arg->mutex);
+	            break;
+	        }
+	        
+	        if (snail_collide(&board_g)) {
+	            if (board_g.gate_state == GATE_IS_CLOSED) {
+	                // Game over because the snail hit the closed gate
+	                printf("Game Over! Snail hit the closed gate.\n");
+	                break;
+	            }
+	        }
+	        
+	        if (board_gameover(&board_g)) {
+	            printf("Game Over! Snail passed through.\n");
+	            break;
+	        }
+	        
+	        if (board_g.guess == board_g.gate_key) {
+	            board_g.gate_state = GATE_IS_OPEN;
+	        }
+	        
+	        board_draw(board_string, &board_g);
+	        printf("%s\n", board_string);
+	        board_g.snail_loc++;
+	        
+	        sleep(SLEEP_TIME);
+	    }   
+	    pthread_mutex_unlock(t_arg->mutex) ;
 	}
+
 
 	pthread_exit(NULL) ;
 	assert(0==1) ; /* never gets here */
@@ -78,19 +98,27 @@ int main(int argc, char * argv[]) {
 	if (is_verbose_g) {
 		printf("(%s,%d): key %c\n",__FILE__,__LINE__,board_g.gate_key) ;
 	}
-
-// ***
-// stuff to do 
-// ***	
-
+//////
+	t_arg.req_exit = 0;
+	t_arg.mutex = &mutex;
+	t_arg.cond = &cond;
 	
-	while ( fgets(buf,LINE_MAX,stdin) != NULL ) {
+	pthread_create(&thread_id, NULL, draw_thread, (void *) &t_arg);
 	
-// ***
-// stuff to do 
-// ***	
-		
+	while (fgets(buf,LINE_MAX,stdin) != NULL) {
+	    buf[strcspn(buf, "\n")] = 0; // removing newline character
+	    
+	    if (strcmp(buf, QUIT_STRING) == 0) {
+	        break;
+	    }
+	    
+	    pthread_mutex_lock(&mutex);
+	    board_g.guess = buf[0]; // Assuming first character of input is the guess
+	    pthread_mutex_unlock(&mutex);
 	}
+	
+	t_arg.req_exit = 1;
+//////
 	
 	if (is_verbose_g) {
 		printf("(%s,%d): requesting thread to exit ...\n", __FILE__,__LINE__) ;
@@ -98,7 +126,9 @@ int main(int argc, char * argv[]) {
 
 // ***
 // stuff to do 
+	pthread_join(thread_id, NULL);
 // ***	
+	
 	
 	pthread_exit(NULL) ; /* wait for the draw thread to exit */
 	assert(0==1) ; /* never gets here */
