@@ -32,9 +32,9 @@ void * draw_thread(void * the_args) {
 
 	while (1) {
 	   //printf("Draw_thread loop entering");
-	    pthread_mutex_lock(t_arg->mutex) ;
+	    pthread_mutex_lock(t_arg->mutex) ;    // Lock the mutex
 	    {
-	        if (t_arg->req_exit) {
+	        if (t_arg->req_exit) {      // Check request to exit and if so, unlock mutex to exit
 	            pthread_mutex_unlock(t_arg->mutex);
 	            break;
 	        }
@@ -55,14 +55,13 @@ void * draw_thread(void * the_args) {
 	            board_g.gate_state = GATE_IS_OPEN;
 	        }
 	        
-	        board_draw(board_string, &board_g);
+	        board_draw(board_string, &board_g);   // Draw the board and move the snail forward
 	        printf("%s\n", board_string);
-
 	        board_g.snail_loc++;
 	        
-	        sleep(SLEEP_TIME);
+	        sleep(SLEEP_TIME);   // Wait for next iteration
 	    }   
-	    pthread_mutex_unlock(t_arg->mutex) ;
+	    pthread_mutex_unlock(t_arg->mutex) ;  // Unlock mutex for next iteration
 	}
 	
 
@@ -101,9 +100,9 @@ int main(int argc, char * argv[]) {
 		printf("(%s,%d): key %c\n",__FILE__,__LINE__,board_g.gate_key) ;
 	}
 //////
-	t_arg.req_exit = 0;
-	t_arg.mutex = &mutex;
-	t_arg.cond = &cond;
+	t_arg.req_exit = 0;  // Initialize exit request
+	t_arg.mutex = &mutex; // Set mutex ptr
+	t_arg.cond = &cond;  // Set condition var
 	
 	pthread_create(&thread_id, NULL, draw_thread, (void *) &t_arg);
 
@@ -115,15 +114,15 @@ int main(int argc, char * argv[]) {
 	        break;
 	    }
 	    
-	    pthread_mutex_lock(&mutex);
+	    pthread_mutex_lock(&mutex); // Lock the mutex to sync
 	    board_g.guess = buf[0]; // Assuming first character of input is the guess
-	    pthread_mutex_unlock(&mutex);
+	    pthread_mutex_unlock(&mutex); // Unlock mutex when updated
             
 	}
 	//printf("Outside of main while loop");
 
 	
-	t_arg.req_exit = 1;
+	t_arg.req_exit = 1; // Request exit
 //////
 	
 	if (is_verbose_g) {
