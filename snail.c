@@ -33,7 +33,7 @@ void * draw_thread(void * the_args) {
 	while (1) {
 	   //printf("Draw_thread loop entering");
 	    pthread_mutex_lock(t_arg->mutex) ;    // Lock the mutex
-	    {
+	    
 	        if (t_arg->req_exit) {      // Check request to exit and if so, unlock mutex to exit
 	            pthread_mutex_unlock(t_arg->mutex);
 	            break;
@@ -60,7 +60,7 @@ void * draw_thread(void * the_args) {
 	        board_g.snail_loc++;
 	        
 	        sleep(SLEEP_TIME);   // Wait for next iteration
-	    }   
+	       
 	    pthread_mutex_unlock(t_arg->mutex) ;  // Unlock mutex for next iteration
 	}
 	
